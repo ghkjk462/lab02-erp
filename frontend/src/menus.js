@@ -19,6 +19,7 @@ export default [
     key: '5', name: '销售管理', icon: 'shopping', submenus: [
       { key: '/sale/sale_create', name: '销售开单' },
       { key: '/sale/sale_record', name: '销售记录' },
+      { key: '/report/sale_report', name: '销售报表'}
     ]
   },
   {
