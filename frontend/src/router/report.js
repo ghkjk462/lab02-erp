@@ -14,5 +14,10 @@ export default {
       meta: { title: '销售报表', permission: 'sale_report' },
       component: () => import('@/views/report/saleReport/index'),
     },
+    {
+      path: 'purchase_report',
+      meta: { title: '采购报表', permission: 'purchase_report' },
+      component: () => import('@/views/report/purchaseReport/index'),
+    },
   ],
 }

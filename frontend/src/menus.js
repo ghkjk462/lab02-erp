@@ -13,6 +13,7 @@ export default [
     key: '4', name: '采购管理', icon: 'shopping-cart', submenus: [
       { key: '/purchasing/purchase_create', name: '采购开单' },
       { key: '/purchasing/purchase_record', name: '采购记录' },
+      { key: '/report/purchase_report', name: '采购报表'}
     ]
   },
   {
