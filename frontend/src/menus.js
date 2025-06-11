@@ -33,6 +33,7 @@ export default [
   {
     key: '9', name: '系统管理', icon: 'team', submenus: [
       { key: '/account', name: '员工账号' },
+      { key: '/basicData/client', name: '客户管理' },
     ]
   },
 ]
