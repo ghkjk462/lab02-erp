@@ -14,6 +14,11 @@
         :inline-collapsed="collapsed"
         @click="switchView" 
         @openChange="openChange">
+        
+        <a-menu-item key="/home" class="menu-item">
+          <a-icon type="dashboard" />
+          <span>数据看板</span>
+      </a-menu-item>
 
         <a-sub-menu v-for="menu in menus" :key="menu.key" class="sub-menu">
         <span slot="title">
