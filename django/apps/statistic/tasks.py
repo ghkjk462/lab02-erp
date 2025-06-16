@@ -159,23 +159,23 @@ def update_dashboard_statistics():
                     stats.last_update = timezone.now()
                     stats.save()
 
-                    # 更新缓存 - 确保所有数据都是JSON可序列化的
-                    cache_data = {
-                        'sales_count': stats.sales_count,
-                        'sales_amount': str(stats.sales_amount),
-                        'purchase_count': stats.purchase_count,
-                        'stock_in_task_count': stats.stock_in_task_count,
-                        'stock_out_task_count': stats.stock_out_task_count,
-                        'inventory_warning_count': stats.inventory_warning_count,
-                        'expiration_warning_count': stats.expiration_warning_count,
-                        'arrears_receivable_amount': str(stats.arrears_receivable_amount),
-                        'arrears_payable_amount': str(stats.arrears_payable_amount),
-                        'hot_goods_data': stats.hot_goods_data,
-                        'sales_trend_data': stats.sales_trend_data,
-                        'last_update': stats.last_update.isoformat()
-                    }
+                    # # 更新缓存 - 确保所有数据都是JSON可序列化的
+                    # cache_data = {
+                    #     'sales_count': stats.sales_count,
+                    #     'sales_amount': str(stats.sales_amount),
+                    #     'purchase_count': stats.purchase_count,
+                    #     'stock_in_task_count': stats.stock_in_task_count,
+                    #     'stock_out_task_count': stats.stock_out_task_count,
+                    #     'inventory_warning_count': stats.inventory_warning_count,
+                    #     'expiration_warning_count': stats.expiration_warning_count,
+                    #     'arrears_receivable_amount': str(stats.arrears_receivable_amount),
+                    #     'arrears_payable_amount': str(stats.arrears_payable_amount),
+                    #     'hot_goods_data': stats.hot_goods_data,
+                    #     'sales_trend_data': stats.sales_trend_data,
+                    #     'last_update': stats.last_update.isoformat()
+                    # }
                     
-                    cache.set(f'dashboard_stats_{team.id}', cache_data, 60)
+                    # cache.set(f'dashboard_stats_{team.id}', cache_data, 60)
                     
                     logger.info(f"团队 {team.number} 统计数据更新完成")
             except Exception as e:

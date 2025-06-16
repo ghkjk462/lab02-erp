@@ -324,16 +324,16 @@ from django.utils import timezone
 class HomeOverviewViewSet(BaseViewSet, ListModelMixin):
     """首页概览"""
 
-    def get_cache_key(self):
-        return f'dashboard_stats_{self.team.id}'
+    # def get_cache_key(self):
+    #     return f'dashboard_stats_{self.team.id}'
     
     @extend_schema(responses={200: HomeViewResponse})
     def list(self, request, *args, **kwargs):
         # 先尝试从缓存获取
-        cache_key = self.get_cache_key()
-        data = cache.get(cache_key)
+        # cache_key = self.get_cache_key()
+        # data = cache.get(cache_key)
         
-        if not data:
+        if True:
             # 缓存未命中,从数据库获取
             # 从统计表获取数据
             try:
@@ -350,7 +350,7 @@ class HomeOverviewViewSet(BaseViewSet, ListModelMixin):
                     "arrears_payable_amount": stats.arrears_payable_amount,
                     "last_update": stats.last_update,
                 }
-                cache.set(cache_key, data, 60) # s
+                # cache.set(cache_key, data, 60) # s
             except DashboardStatistics.DoesNotExist:
                 # 如果没有统计数据,返回默认值
                 data = {
