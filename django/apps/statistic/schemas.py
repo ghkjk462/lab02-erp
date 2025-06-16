@@ -108,6 +108,7 @@ class HomeViewResponse(Serializer):
     inventory_warning_count = IntegerField(label='库存预警')
     arrears_receivable_amount = AmountField(label='应收欠款')
     arrears_payable_amount = AmountField(label='应付欠款')
+    last_update = DateTimeField(label='最后更新时间')
 
 
 __all__ = [

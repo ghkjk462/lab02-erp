@@ -1,6 +1,15 @@
 <template>
   <div>
     <a-row :gutter="[16, 16]">
+      <!-- 更新时间显示 -->
+      <a-col :span="24">
+        <div class="last-update">
+          最后更新时间: {{ formatLastUpdate }}
+          <a-button type="link" @click="refreshData">
+            <a-icon type="reload" :spin="loading"/>
+          </a-button>
+        </div>
+      </a-col>
       <a-col :span="8">
         <a-card class="data-card" size="small">
           <template slot="title">
@@ -52,6 +61,7 @@
 </template>
 
 <script>
+import moment from 'moment'
 import { homeOverview } from "@/api/statistic";
 
 export default {
@@ -64,6 +74,13 @@ export default {
       loading: false,
       item: {},
     };
+  },
+  computed: {
+    formatLastUpdate() {
+      return this.item.last_update ? 
+        moment(this.item.last_update).format('YYYY-MM-DD HH:mm:ss') : 
+        '暂无数据'
+    }
   },
   methods: {
     initialize() {
@@ -82,6 +99,16 @@ export default {
     navigateTo(pathName) {
       this.$router.push({ path: pathName });
     },
+    refreshData() {
+      this.loading = true
+      homeOverview()
+        .then((data) => {
+          this.item = data
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    }
   },
   mounted() {
     this.initialize();
@@ -90,6 +117,12 @@ export default {
 </script>
 
 <style scoped>
+.last-update {
+  text-align: right;
+  padding: 8px;
+  color: rgba(66, 204, 255, 0.45);
+  font-size: 14px;
+}
 .data-card {
   background: linear-gradient(135deg, #1890ff 0%, #f5f5f5 100%);
   border-radius: 8px;

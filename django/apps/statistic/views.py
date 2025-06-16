@@ -145,57 +145,43 @@ class SalesReportViewSet(BaseViewSet):
 
         return self.get_paginated_response(queryset)
 
-
 class SalesHotGoodsViewSet(BaseViewSet, ListModelMixin):
     """销售前十产品"""
-
-    permission_classes = [IsAuthenticated, SalesHotGoodsPermission]
-    pagination_class = None
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = SalesHotGoodsFilter
-    queryset = SalesGoods.objects.all()
-
-    def get_queryset(self):
-        return super().get_queryset().filter(sales_order__is_void=False)
-
+    
+    def get_cache_key(self):
+        return f'dashboard_stats_{self.team.id}'
+    
     @extend_schema(parameters=[SalesHotGoodsParameter], responses={200: SalesHotGoodsResponse})
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        queryset = queryset.select_related('goods', 'goods__category', 'goods__unit')
-        queryset = queryset.values('goods').annotate(
-            goods_number=F('goods__number'), goods_name=F('goods__name'),
-            goods_barcode=F('goods__barcode'), goods_spec=F('goods__spec'),
-            category_name=F('goods__category__name'), unit_name=F('goods__unit__name'),
-            total_sales_quantity=Coalesce(Sum('sales_quantity'), Value(0.0)),
-        ).order_by('-total_sales_quantity')[:10]
-
-        return Response(data=queryset, status=status.HTTP_200_OK)
-
-
+        # 从缓存获取数据
+        cache_key = self.get_cache_key()
+        cached_data = cache.get(cache_key)
+        
+        if cached_data and 'hot_goods_data' in cached_data:
+            return Response(data=cached_data['hot_goods_data'], status=status.HTTP_200_OK)
+            
+        # 缓存未命中则从数据库获取
+        stats = DashboardStatistics.objects.get(team=self.team)
+        return Response(data=stats.hot_goods_data, status=status.HTTP_200_OK)
+    
 class SalesTrendViewSet(BaseViewSet, ListModelMixin):
     """销售走势"""
-
-    permission_classes = [IsAuthenticated, SalesTrendPermission]
-    pagination_class = None
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = SalesTrendFilter
-    queryset = SalesOrder.objects.all()
-
-    def get_queryset(self):
-        return super().get_queryset().filter(is_void=False)
-
+    
+    def get_cache_key(self):
+        return f'dashboard_stats_{self.team.id}'
+    
     @extend_schema(parameters=[SalesTrendParameter], responses={200: SalesTrendResponse})
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        queryset = queryset.select_related('warehouse')
-        queryset = queryset.extra(select={'date': connection.ops.date_trunc_sql('day', 'create_time')})
-        queryset = queryset.values('warehouse', 'date').annotate(
-            warehouse_number=F('warehouse__number'), warehouse_name=F('warehouse__name'),
-            total_sales_amount=Coalesce(Sum('total_amount'), Value(0, output_field=AmountField())),
-        )
-
-        return Response(data=queryset, status=status.HTTP_200_OK)
-
+        # 从缓存获取数据
+        cache_key = self.get_cache_key()
+        cached_data = cache.get(cache_key)
+        
+        if cached_data and 'sales_trend_data' in cached_data:
+            return Response(data=cached_data['sales_trend_data'], status=status.HTTP_200_OK)
+            
+        # 缓存未命中则从数据库获取
+        stats = DashboardStatistics.objects.get(team=self.team)
+        return Response(data=stats.sales_trend_data, status=status.HTTP_200_OK)
 
 class FinanceStatisticViewSet(FunctionViewSet):
     """收支统计"""
@@ -330,83 +316,55 @@ class SalesReturnPaymentDetialViewSet(BaseViewSet, ListModelMixin):
 
     def get_queryset(self):
         return super().get_queryset().filter(is_void=False)
+    
 
-
+from django.core.cache import cache
+from decimal import Decimal
+from django.utils import timezone
 class HomeOverviewViewSet(BaseViewSet, ListModelMixin):
     """首页概览"""
 
+    def get_cache_key(self):
+        return f'dashboard_stats_{self.team.id}'
+    
     @extend_schema(responses={200: HomeViewResponse})
     def list(self, request, *args, **kwargs):
-        start_time = pendulum.today().to_datetime_string()
-        end_time = pendulum.tomorrow().to_datetime_string()
-        data = {
-            "sales_count": 0,
-            "sales_amount": 0,
-            "purchase_count": 0,
-            "stock_in_task_count": 0,
-            "stock_out_task_count": 0,
-            "inventory_warning_count": 0,
-            "arrears_receivable_amount": 0,
-            "arrears_payable_amount": 0,
-        }
-
-        # 销售
-        queryset = SalesOrder.objects.filter(create_time__gte=start_time, create_time__lt=end_time,
-                                             is_void=False, team=self.team)
-        result = queryset.aggregate(sales_count=Count('id'), sales_amount=Sum('total_amount'))
-        if result['sales_count'] is not None:
-            data['sales_count'] = result['sales_count']
-
-        if result['sales_amount'] is not None:
-            data['sales_amount'] = result['sales_amount']
-
-        # 采购
-        queryset = PurchaseOrder.objects.filter(create_time__gte=start_time, create_time__lt=end_time,
-                                                is_void=False, team=self.team)
-        result = queryset.aggregate(purchase_count=Count('id'))
-        if result['purchase_count'] is not None:
-            data['purchase_count'] = result['purchase_count']
-
-        # 入库
-        queryset = StockInOrder.objects.filter(is_completed=False, is_void=False, team=self.team)
-        result = queryset.aggregate(stock_in_task_count=Count('id'))
-        if result['stock_in_task_count'] is not None:
-            data['stock_in_task_count'] = result['stock_in_task_count']
-
-        # 出库
-        queryset = StockOutOrder.objects.filter(is_completed=False, is_void=False, team=self.team)
-        result = queryset.aggregate(stock_out_task_count=Count('id'))
-        if result['stock_out_task_count'] is not None:
-            data['stock_out_task_count'] = result['stock_out_task_count']
-
-        # 库存预警
-        queryset = Inventory.objects.filter(team=self.team, goods__enable_inventory_warning=True,
-                                            total_quantity__gt=F('goods__inventory_upper'),
-                                            total_quantity__lt=F('goods__inventory_lower'))
-        result = queryset.aggregate(inventory_warning_count=Count('id'))
-        if result['inventory_warning_count'] is not None:
-            data['inventory_warning_count'] = result['inventory_warning_count']
-
-        # 临期预警
-        today_date = pendulum.today().to_date_string()
-        queryset = Batch.objects.filter(team=self.team, has_stock=True, goods__enable_batch_control=True,
-                                        goods__is_active=True, production_date__isnull=False,
-                                        warning_date__lte=today_date, expiration_date__gte=today_date)
-        result = queryset.aggregate(expiration_warning_count=Count('id'))
-        if result['expiration_warning_count'] is not None:
-            data['expiration_warning_count'] = result['expiration_warning_count']
-
-        # 应收欠款
-        queryset = Client.objects.filter(is_active=True, has_arrears=True, team=self.team)
-        result = queryset.aggregate(arrears_receivable_amount=Sum('arrears_amount'))
-        if result['arrears_receivable_amount'] is not None:
-            data['arrears_receivable_amount'] = result['arrears_receivable_amount']
-
-        # 应付欠款
-        queryset = Supplier.objects.filter(is_active=True, has_arrears=True, team=self.team)
-        result = queryset.aggregate(arrears_payable_amount=Sum('arrears_amount'))
-        if result['arrears_payable_amount'] is not None:
-            data['arrears_payable_amount'] = result['arrears_payable_amount']
+        # 先尝试从缓存获取
+        cache_key = self.get_cache_key()
+        data = cache.get(cache_key)
+        
+        if not data:
+            # 缓存未命中,从数据库获取
+            # 从统计表获取数据
+            try:
+                stats = DashboardStatistics.objects.get(team=self.team)
+                data = {
+                    "sales_count": stats.sales_count,
+                    "sales_amount": stats.sales_amount,
+                    "purchase_count": stats.purchase_count,
+                    "stock_in_task_count": stats.stock_in_task_count,
+                    "stock_out_task_count": stats.stock_out_task_count,
+                    "inventory_warning_count": stats.inventory_warning_count,
+                    "expiration_warning_count": stats.expiration_warning_count,
+                    "arrears_receivable_amount": stats.arrears_receivable_amount,
+                    "arrears_payable_amount": stats.arrears_payable_amount,
+                    "last_update": stats.last_update,
+                }
+                cache.set(cache_key, data, 60) # s
+            except DashboardStatistics.DoesNotExist:
+                # 如果没有统计数据,返回默认值
+                data = {
+                    "sales_count": 0,
+                    "sales_amount": Decimal('0.00'),
+                    "purchase_count": 0,
+                    "stock_in_task_count": 0,
+                    "stock_out_task_count": 0,
+                    "inventory_warning_count": 0,
+                    "expiration_warning_count": 0,
+                    "arrears_receivable_amount": Decimal('0.00'),
+                    "arrears_payable_amount": Decimal('0.00'),
+                    "last_update": timezone.now()
+                }
 
         return Response(data=data, status=status.HTTP_200_OK)
 

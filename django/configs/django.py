@@ -21,3 +21,8 @@ DATABASES = {
         'OPTIONS': {'charset': 'utf8mb4'},
     }
 }
+
+
+# 时区设置
+USE_TZ = True
+TIME_ZONE = 'Asia/Shanghai'

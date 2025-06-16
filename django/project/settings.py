@@ -238,3 +238,32 @@ LOGGING = {
         },
     },
 }
+
+from celery.schedules import crontab
+
+# # Celery 配置
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+
+# Celery 配置
+# CELERY_BROKER_URL = 'django://'
+# CELERY_RESULT_BACKEND = 'django+memory://'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai'
+
+# Celery Beat 配置
+CELERY_BEAT_SCHEDULE = {
+    'update-dashboard-stats': {
+        'task': 'apps.statistic.tasks.update_dashboard_statistics',
+        'schedule': 30.0,  # 
+    },
+}
+
+# 添加到 INSTALLED_APPS
+INSTALLED_APPS += [
+    'django_celery_beat',
+    'django_celery_results'
+    # 'apps.dashboard',  # 确保添加新的应用
+]
