@@ -2,6 +2,8 @@ export default [
   {
     key: '2', name: '基础管理', icon: 'table', submenus: [
       { key: '/basicData/warehouse', name: '仓库管理'},
+      { key: '/basicData/client', name: '客户管理' },
+      { key: '/basicData/supplier', name: '供应商管理' },
     ]
   },
   {
@@ -33,8 +35,6 @@ export default [
   {
     key: '9', name: '系统管理', icon: 'team', submenus: [
       { key: '/account', name: '员工账号' },
-      { key: '/basicData/client', name: '客户管理' },
-      { key: '/basicData/supplier', name: '供应商管理' },
     ]
   },
 ]
