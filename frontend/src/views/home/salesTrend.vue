@@ -20,11 +20,11 @@
     data() {
       return {
         ranges: {
-          '7天': [moment().add(-7, 'days').startOf('day'), moment().startOf('day')],
-          '15天': [moment().add(-15, 'days').startOf('day'), moment().startOf('day')],
-          '30天': [moment().add(-30, 'days').startOf('day'), moment().startOf('day')],
+          '7天': [moment().add(-7, 'days').startOf('day'), moment().endOf('day')],
+          '15天': [moment().add(-15, 'days').startOf('day'), moment().endOf('day')],
+          '30天': [moment().add(-30, 'days').startOf('day'), moment().endOf('day')],
         },
-        dateRange: [moment().add(-7, 'days').startOf('day'), moment().startOf('day')],
+        dateRange: [moment().add(-7, 'days').startOf('day'), moment().endOf('day')],
         chart: null,
         loading: false,
       };
@@ -53,7 +53,7 @@
         salesTrendList(form).then(resp => {
           console.log('sealetrend');
           console.log(resp);
-          let data = [...resp, ...this.fillData(resp, resp.map(item => { return item.warehouse_name }))];
+          let data = [...resp, ...this.fillData(resp)];
           this.chart.changeData(data);
           this.chart.forceFit();
         }).finally(() => {
@@ -64,17 +64,16 @@
         this.dateRange = dateRange;
         this.list();
       },
-      fillData(items, warehouseList) {
+      fillData(items) {
         let startDate = moment(this.dateRange[0]);
-        let endData = moment(this.dateRange[1]);
-        let days = endData.diff(startDate, 'days');
+        let endDate = moment(this.dateRange[1]);
+        let days = endDate.diff(startDate, 'days');
         let fillItems = [];
         
         for (let i = 0; i <= days; i++) {
-          for (let w of warehouseList) {
-            if (items.findIndex(item => item.warehouse_name === w && item.date === startDate.format('YYYY-MM-DD')) === -1) {
-              fillItems.push({ date: startDate.format('YYYY-MM-DD'), warehouse_name: w, total_sales_amount: 0 });
-            }
+          let dateStr = startDate.format('YYYY-MM-DD');
+          if (items.findIndex(item => item.date === dateStr) === -1) {
+            fillItems.push({ date: dateStr, total_sales_amount: 0 });
           }
           startDate.add(1, 'days');
         }

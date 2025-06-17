@@ -78,9 +78,6 @@ class SalesTrendParameter(Serializer):
 
 
 class SalesTrendResponse(Serializer):
-    warehouse = IntegerField(label='仓库ID')
-    warehouse_number = CharField(label='产品编号')
-    warehouse_name = CharField(label='产品名称')
     total_sales_amount = AmountField(label='销售总金额')
     date = DateField(label='日期')
 
