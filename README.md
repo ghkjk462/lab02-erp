@@ -83,6 +83,14 @@ yarn install
 yarn serve
 ```
 
+### 启用定时器刷新数据看板
+
+```bash
+cd django
+.\scripts\start_celery_worker.bat
+.\scripts\start_celery_beat.bat
+```
+
 ## 项目结构
 
 ```
